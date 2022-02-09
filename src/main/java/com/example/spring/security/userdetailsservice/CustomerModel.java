@@ -4,6 +4,8 @@
  */
 package com.example.spring.security.userdetailsservice;
 
+import lombok.Getter;
+
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -14,6 +16,7 @@ import javax.persistence.Id;
  * @author edmundoogaz
  */
 @Entity
+@Getter
 public class CustomerModel {
 
     @Id
@@ -34,11 +37,14 @@ public class CustomerModel {
         this.password = password;
     }
 
-    public String getEmail() {
-        return email;
-    }
-
-    public String getPassword() {
-        return password;
+    @Override
+    public String toString() {
+        return "CustomerModel{" +
+                "id=" + id +
+                ", firstName='" + firstName + '\'' +
+                ", lastName='" + lastName + '\'' +
+                ", email='" + email + '\'' +
+                ", password='" + password + '\'' +
+                '}';
     }
 }

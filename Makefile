@@ -4,5 +4,5 @@ clean:
 build:
 	mvn package -DskipTests
 
-run:
+run: build
 	mvn spring-boot:run
