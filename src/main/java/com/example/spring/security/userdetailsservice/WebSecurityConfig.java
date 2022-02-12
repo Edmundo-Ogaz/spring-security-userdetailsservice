@@ -21,9 +21,8 @@ import javax.annotation.Resource;
 
 import static com.example.spring.security.userdetailsservice.SecurityConstants.SIGN_UP_URL;
 
-@Configuration
 @EnableWebSecurity
-public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
+public class WebSecurityConfig {
 
     @Resource
     private UserDetailsService userDetailsService;
@@ -43,43 +42,10 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         return new BCryptPasswordEncoder();
     }
 
-    @Override
-    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-        System.out.println("WebSecurityConfig configure AuthenticationManagerBuilder");
-        auth.authenticationProvider(authProvider());
-    }
-
     /*@Override
     public void configure(WebSecurity web) throws Exception {
         web.ignoring().antMatchers("/api/services/controller/user/**");
     }*/
-
-    @Override
-    protected void configure(HttpSecurity http) throws Exception {
-        System.out.println("WebSecurityConfig configure HttpSecurity");
-        http.cors().and().authorizeRequests()
-                .antMatchers(HttpMethod.POST, SIGN_UP_URL).permitAll()
-                .antMatchers(HttpMethod.POST, "/users").permitAll()
-                .antMatchers(HttpMethod.POST, "/test1").permitAll()
-                .anyRequest().authenticated()
-                .and()
-                .addFilter(new JWTAuthenticationFilter(authenticationManager()))
-                .addFilter(new JWTAuthorizationFilter(authenticationManager()))
-                // this disables session creation on Spring Security
-                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                .and().csrf().disable();
-    }
-
-    @Bean
-    CorsConfigurationSource corsConfigurationSource() {
-        System.out.println("WebSecurityConfig corsConfigurationSource");
-        final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-
-        CorsConfiguration corsConfiguration = new CorsConfiguration().applyPermitDefaultValues();
-        source.registerCorsConfiguration("/**", corsConfiguration);
-
-        return source;
-    }
 
     /*@Bean
     CorsConfigurationSource corsConfigurationSource() {
@@ -90,4 +56,45 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }*/
+
+    @Configuration
+    public static class FormLoginWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapter {
+
+        @Resource
+        private DaoAuthenticationProvider authProvider;
+
+        @Override
+        protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+            System.out.println("WebSecurityConfig configure AuthenticationManagerBuilder");
+            auth.authenticationProvider(authProvider);
+        }
+
+        @Override
+        protected void configure(HttpSecurity http) throws Exception {
+            System.out.println("WebSecurityConfig configure HttpSecurity");
+            http.cors().and().authorizeRequests()
+                    .antMatchers(HttpMethod.POST, SIGN_UP_URL).permitAll()
+                    .antMatchers(HttpMethod.GET, "/users").permitAll()
+                    .antMatchers(HttpMethod.POST, "/test1").permitAll()
+                    .anyRequest().authenticated()
+                    .and()
+                    .addFilter(new JWTAuthenticationFilter(authenticationManager()))
+                    .addFilter(new JWTAuthorizationFilter(authenticationManager()))
+                    // this disables session creation on Spring Security
+                    .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                    .and().csrf().disable()
+            ;
+        }
+
+        @Bean
+        CorsConfigurationSource corsConfigurationSource() {
+            System.out.println("WebSecurityConfig corsConfigurationSource");
+            final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+
+            CorsConfiguration corsConfiguration = new CorsConfiguration().applyPermitDefaultValues();
+            source.registerCorsConfiguration("/**", corsConfiguration);
+
+            return source;
+        }
+    }
 }

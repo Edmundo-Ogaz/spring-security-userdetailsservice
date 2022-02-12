@@ -3,6 +3,7 @@ package com.example.spring.security.userdetailsservice;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.json.JSONObject;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -61,9 +62,22 @@ public class JWTAuthenticationFilter extends UsernamePasswordAuthenticationFilte
                 .withExpiresAt(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
                 .sign(Algorithm.HMAC512(SECRET.getBytes()));
 
+        String username = ((User) auth.getPrincipal()).getUsername();
+
+        JSONObject user = new JSONObject();
+        user.put("userId", 1);
+        user.put("name", "test");
+        user.put("username", username);
+        user.put("isAdmin", true);
+
         String body = ((User) auth.getPrincipal()).getUsername() + " " + token;
 
-        res.getWriter().write(body);
+        JSONObject json = new JSONObject();
+        json.put("user", user);
+        json.put("token", token);
+        res.setContentType("application/json");
+        res.setCharacterEncoding("UTF-8");
+        res.getWriter().write(json.toString());
         res.getWriter().flush();
     }
 }
