@@ -1,5 +1,6 @@
 package com.example.spring.security.userdetailsservice;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -19,82 +20,70 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import javax.annotation.Resource;
 
-import static com.example.spring.security.userdetailsservice.SecurityConstants.SIGN_UP_URL;
-
 @EnableWebSecurity
-public class WebSecurityConfig {
+public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
-    @Resource
-    private UserDetailsService userDetailsService;
+//    @Resource
+//    private UserDetailsService userDetailsService;
+
+//    @Autowired
+//    private UserDetailsService userDetailsService;
 
     @Bean
     public DaoAuthenticationProvider authProvider() {
-        System.out.println("WebSecurityConfig authProvider");
+        System.out.println("WebSecurityConfig bean authProvider");
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(userDetailsService);
+        authProvider.setUserDetailsService(userDetailsService());
         authProvider.setPasswordEncoder(passwordEncoder());
         return authProvider;
     }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        System.out.println("WebSecurityConfig passwordEncoder");
+        System.out.println("WebSecurityConfig bean passwordEncoder");
         return new BCryptPasswordEncoder();
     }
 
-    /*@Override
-    public void configure(WebSecurity web) throws Exception {
-        web.ignoring().antMatchers("/api/services/controller/user/**");
-    }*/
+    @Bean
+    public UserDetailsService userDetailsService() {
+        System.out.println("WebSecurityConfig bean userDetailsService");
+        return new CustomUserDetailService();
+    }
 
-    /*@Bean
-    CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("https://example.com"));
-        configuration.setAllowedMethods(Arrays.asList("GET","POST"));
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
-    }*/
+    @Override
+    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+        System.out.println("WebSecurityConfig configure AuthenticationManagerBuilder");
+        auth.authenticationProvider(authProvider());
+    }
 
-    @Configuration
-    public static class FormLoginWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapter {
-
-        @Resource
-        private DaoAuthenticationProvider authProvider;
-
-        @Override
-        protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-            System.out.println("WebSecurityConfig configure AuthenticationManagerBuilder");
-            auth.authenticationProvider(authProvider);
-        }
-
-        @Override
-        protected void configure(HttpSecurity http) throws Exception {
-            System.out.println("WebSecurityConfig configure HttpSecurity");
-            http.cors().and().authorizeRequests()
-                    .antMatchers(HttpMethod.POST, SIGN_UP_URL).permitAll()
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        System.out.println("WebSecurityConfig configure HttpSecurity");
+        http
+                .cors()
+                .and()
+                .authorizeRequests()
                     .antMatchers(HttpMethod.GET, "/users").permitAll()
                     .antMatchers(HttpMethod.POST, "/test1").permitAll()
                     .anyRequest().authenticated()
-                    .and()
-                    .addFilter(new JWTAuthenticationFilter(authenticationManager()))
-                    .addFilter(new JWTAuthorizationFilter(authenticationManager()))
-                    // this disables session creation on Spring Security
-                    .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                    .and().csrf().disable()
-            ;
-        }
+                .and()
+                .addFilter(new JWTAuthenticationFilter(authenticationManager()))
+                .addFilter(new JWTAuthorizationFilter(authenticationManager()))
+                // this disables session creation on Spring Security
+                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .and()
+                .csrf().disable()
+        ;
+    }
 
-        @Bean
-        CorsConfigurationSource corsConfigurationSource() {
-            System.out.println("WebSecurityConfig corsConfigurationSource");
-            final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    @Bean
+    CorsConfigurationSource corsConfigurationSource() {
+        System.out.println("WebSecurityConfig bean corsConfigurationSource");
+        final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 
-            CorsConfiguration corsConfiguration = new CorsConfiguration().applyPermitDefaultValues();
-            source.registerCorsConfiguration("/**", corsConfiguration);
+        CorsConfiguration corsConfiguration = new CorsConfiguration().applyPermitDefaultValues();
+        source.registerCorsConfiguration("/**", corsConfiguration);
 
-            return source;
-        }
+        return source;
     }
 }
