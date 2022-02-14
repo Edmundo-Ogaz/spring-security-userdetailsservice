@@ -16,8 +16,12 @@ import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
+import org.springframework.util.Assert;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ExtendWith(SpringExtension.class)
@@ -29,12 +33,6 @@ public class UserControllerWebMvcIntegrationTest {
 
     @MockBean
     private CustomerRepository customerRepository;
-//
-//    @MockBean
-//    private PasswordEncoder passwordEncoder;
-
-//    @MockBean
-//    private CustomUserDetailService userDetailsService;
 
     @Test
     public void givenAuthRequestOnPublicService_Users_shouldSucceedWith200() throws Exception {
@@ -43,14 +41,7 @@ public class UserControllerWebMvcIntegrationTest {
     }
 
     @Test
-    public void givenAuthRequestOnPublicService_shouldSucceedWith200() throws Exception {
-
-        System.out.println(" UserControllerWebMvcIntegrationTest customerRepository " + customerRepository);
-
-        CustomerModel customerModel = new CustomerModel(1l, "test", "test", "test@test.cl", "test");
-        Mockito.when(customerRepository.findByEmail("test")).thenReturn(customerModel);
-
-        CustomerModel customerModel1 = customerRepository.findByEmail("test");
+    public void givenAuthRequestOnPublicService_Test1_shouldSucceedWith200() throws Exception {
 
         JSONObject data = new JSONObject();
         data.put("password", "test");
@@ -66,7 +57,7 @@ public class UserControllerWebMvcIntegrationTest {
     }
 
     @Test
-    public void givenAuthRequestOnPrivateService_Test_shouldSucceedWith200() throws Exception {
+    public void givenAuthRequestOnPrivateService_Login_shouldSucceedWith200() throws Exception {
 
         CustomerModel customerModel = new CustomerModel(1l, "rob", "test", "test@test.cl", "$2a$12$m736W0KE7HFXuWnp9m534OOE3VPVgwza19h.hBoLhP.L4Eoc5Nnqa");
         Mockito.when(customerRepository.findByEmail("test@test.cl")).thenReturn(customerModel);
@@ -75,10 +66,63 @@ public class UserControllerWebMvcIntegrationTest {
         data.put("email", "test@test.cl");
         data.put("password", "password");
 
-        mvc.perform(
-                MockMvcRequestBuilders.post("/api/services/controller/user/login")
+        MvcResult result = mvc.perform(
+                MockMvcRequestBuilders
+                        .post("/api/services/controller/user/login")
                         .content(data.toString())
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk());
+                        .contentType(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String content = result.getResponse().getContentAsString();
+        JSONObject json = new JSONObject(content);
+        String token = (String)json.get("token");
+        Assert.notNull(token);
+    }
+
+    @Test
+    public void givenAuthRequestOnPrivatePostService_users_shouldSucceedWith200() throws Exception {
+
+        CustomerModel customerModel = new CustomerModel(1l, "rob", "test", "test@test.cl", "$2a$12$m736W0KE7HFXuWnp9m534OOE3VPVgwza19h.hBoLhP.L4Eoc5Nnqa");
+        Mockito.when(customerRepository.findByEmail("test@test.cl")).thenReturn(customerModel);
+
+        JSONObject dataLogin = new JSONObject();
+        dataLogin.put("email", "test@test.cl");
+        dataLogin.put("password", "password");
+
+        MvcResult resultLogin = mvc.perform(
+                MockMvcRequestBuilders
+                        .post("/api/services/controller/user/login")
+                        .content(dataLogin.toString())
+                        .contentType(MediaType.APPLICATION_JSON)
+        )
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String content = resultLogin.getResponse().getContentAsString();
+        JSONObject json = new JSONObject(content);
+        String token = (String)json.get("token");
+        Assert.notNull(token);
+
+        Mockito.when(customerRepository.save(any())).thenReturn(customerModel);
+
+        JSONObject data = new JSONObject();
+        data.put("password", "test");
+        data.put("firstName", "test");
+        data.put("lastName", "test");
+        data.put("email", "test@test.cl");
+
+        String authorization = "Bearer " + token;
+
+        MvcResult result = mvc.perform(
+                MockMvcRequestBuilders
+                        .post("/users")
+                        .content(data.toString())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", authorization)
+                )
+                .andExpect(status().isOk())
+                .andReturn();
     }
 }

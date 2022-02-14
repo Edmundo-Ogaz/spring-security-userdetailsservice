@@ -12,3 +12,6 @@ run: build
 
 run-no-test: build-no-test
 	mvn spring-boot:run
+
+dependencies:
+	mvn dependency:tree
